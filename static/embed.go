@@ -24,4 +24,6 @@ import (
 //go:embed jellyfin-crx/static/js/jquery-3.6.0.min.js
 //go:embed jellyfin-crx/static/js/md5.min.js
 //go:embed jellyfin-crx/content/main.js
+//go:embed fn-danmaku/fn-danmaku.js
+//go:embed fn-danmaku/fntv-play-info-hook.js
 var EmbeddedStaticAssets embed.FS

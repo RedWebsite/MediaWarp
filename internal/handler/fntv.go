@@ -7,11 +7,14 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/AkimioJR/MediaWarp/constants"
+	"github.com/AkimioJR/MediaWarp/internal/config"
 	"github.com/AkimioJR/MediaWarp/internal/logging"
 	"github.com/AkimioJR/MediaWarp/utils"
 
@@ -40,6 +43,21 @@ func NewFNTVHandler(addr string) (*FNTVHandler, error) {
 				handler.ModifyStream,
 			),
 		},
+	}
+
+	if config.Web.Enable {
+		if config.Web.Index || config.Web.Danmaku || config.Web.Head != "" {
+			handler.routerRules = append(
+				handler.routerRules,
+				RegexpRouteRule{
+					Regexp: constants.FNTVRegexp.ModifyIndex,
+					Handler: responseModifyCreater(
+						&httputil.ReverseProxy{Director: handler.proxy.Director},
+						handler.ModifyIndex,
+					),
+				},
+			)
+		}
 	}
 
 	handler.httpStrmHandler, err = getHTTPStrmHandler()
@@ -177,6 +195,50 @@ func (handler *FNTVHandler) ModifyStream(rw *http.Response) error {
 	rw.Header.Set("Content-Length", strconv.Itoa(len(data)))
 	rw.Body = io.NopCloser(bytes.NewReader(data))
 
+	return nil
+}
+
+// 修改首页函数
+func (handler *FNTVHandler) ModifyIndex(rw *http.Response) error {
+	var (
+		htmlFilePath string = path.Join(config.CostomDir(), "index.html")
+		htmlContent  []byte
+		addHEAD      bytes.Buffer
+		err          error
+	)
+
+	defer rw.Body.Close() // 无论哪种情况，最终都要确保原 Body 被关闭，避免内存泄漏
+	if config.Web.Index { // 从本地文件读取index.html
+		if htmlContent, err = os.ReadFile(htmlFilePath); err != nil {
+			logging.Warning("读取文件内容出错，错误信息：", err)
+			return err
+		}
+	} else { // 从上游获取响应体
+		if htmlContent, err = io.ReadAll(rw.Body); err != nil {
+			return err
+		}
+	}
+
+	{ // 内置嵌入脚本
+		addHEAD.WriteString("<head>\n" + `<!-- MediaWarp Web 页面修改功能 -->` + "\n")
+
+		if config.Web.Danmaku { // 弹幕
+			addHEAD.WriteString(`<script src="/MediaWarp/static/fn-danmaku/fntv-play-info-hook.js"></script>` + "\n")
+			addHEAD.WriteString(`<script src="/MediaWarp/static/fn-danmaku/fn-danmaku.js" defer></script>` + "\n")
+		}
+
+		addHEAD.WriteString(`<!-- MediaWarp Web 页面修改功能 end -->`)
+	}
+
+	if config.Web.Head != "" { // 用户自定义HEAD
+		addHEAD.WriteString(config.Web.Head)
+		addHEAD.WriteByte('\n')
+	}
+
+	htmlContent = bytes.Replace(htmlContent, []byte("<head>"), addHEAD.Bytes(), 1) // 将添加HEAD
+
+	rw.Header.Set("Content-Length", strconv.Itoa(len(htmlContent)))
+	rw.Body = io.NopCloser(bytes.NewReader(htmlContent))
 	return nil
 }
 
