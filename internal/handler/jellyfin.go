@@ -277,37 +277,44 @@ func (handler *JellyfinHandler) ModifyIndex(rw *http.Response) error {
 		}
 	}
 
-	if config.Web.Head != "" { // 用户自定义HEAD
-		addHEAD.WriteString(config.Web.Head)
-		addHEAD.WriteByte('\n')
-	}
-	if config.Web.ExternalPlayerUrl { // 外部播放器
-		addHEAD.WriteString(`<script src="/MediaWarp/static/embyExternalUrl/embyWebAddExternalUrl/embyLaunchPotplayer.js"></script>` + "\n")
-	}
-	if config.Web.Crx { // crx 美化
-		addHEAD.WriteString(`<link rel="stylesheet" id="theme-css" href="/MediaWarp/static/jellyfin-crx/static/css/style.css" type="text/css" media="all" />
+	{ // 内置嵌入脚本
+		addHEAD.WriteString("<head>\n" + `<!-- MediaWarp Web 页面修改功能 -->` + "\n")
+
+		if config.Web.ExternalPlayerUrl { // 外部播放器
+			addHEAD.WriteString(`<script src="/MediaWarp/static/embyExternalUrl/embyWebAddExternalUrl/embyLaunchPotplayer.js"></script>` + "\n")
+		}
+		if config.Web.Crx { // crx 美化
+			addHEAD.WriteString(`<link rel="stylesheet" id="theme-css" href="/MediaWarp/static/jellyfin-crx/static/css/style.css" type="text/css" media="all" />
     <script src="/MediaWarp/static/jellyfin-crx/static/js/common-utils.js"></script>
     <script src="/MediaWarp/static/jellyfin-crx/static/js/jquery-3.6.0.min.js"></script>
     <script src="/MediaWarp/static/jellyfin-crx/static/js/md5.min.js"></script>
     <script src="/MediaWarp/static/jellyfin-crx/content/main.js"></script>`)
+			addHEAD.WriteByte('\n')
+		}
+		if config.Web.ActorPlus { // 过滤没有头像的演员和制作人员
+			addHEAD.WriteString(`<script src="/MediaWarp/static/emby-web-mod/actorPlus/actorPlus.js"></script>` + "\n")
+		}
+		if config.Web.FanartShow { // 显示同人图（fanart图）
+			addHEAD.WriteString(`<script src="/MediaWarp/static/emby-web-mod/fanart_show/fanart_show.js"></script>` + "\n")
+		}
+
+		if config.Web.Danmaku { // 弹幕
+			addHEAD.WriteString(`<script src="/MediaWarp/static/jellyfin-danmaku/ede.js" defer></script>` + "\n")
+		}
+
+		if config.Web.VideoTogether { // VideoTogether
+			addHEAD.WriteString(`<script src="https://2gether.video/release/extension.website.user.js"></script>` + "\n")
+		}
+
+		addHEAD.WriteString(`<!-- MediaWarp Web 页面修改功能 end -->`)
+	}
+
+	if config.Web.Head != "" { // 用户自定义HEAD
+		addHEAD.WriteString(config.Web.Head)
 		addHEAD.WriteByte('\n')
 	}
-	if config.Web.ActorPlus { // 过滤没有头像的演员和制作人员
-		addHEAD.WriteString(`<script src="/MediaWarp/static/emby-web-mod/actorPlus/actorPlus.js"></script>` + "\n")
-	}
-	if config.Web.FanartShow { // 显示同人图（fanart图）
-		addHEAD.WriteString(`<script src="/MediaWarp/static/emby-web-mod/fanart_show/fanart_show.js"></script>` + "\n")
-	}
-	if config.Web.Danmaku { // 弹幕
-		addHEAD.WriteString(`<script src="/MediaWarp/static/jellyfin-danmaku/ede.js" defer></script>` + "\n")
-	}
-	if config.Web.VideoTogether { // VideoTogether
-		addHEAD.WriteString(`<script src="https://2gether.video/release/extension.website.user.js"></script>` + "\n")
-	}
 
-	addHEAD.WriteString(`<!-- MediaWarp Web 页面修改功能 -->` + "\n" + "</head>")
-
-	htmlContent = bytes.Replace(htmlContent, []byte("</head>"), addHEAD.Bytes(), 1) // 将添加HEAD
+	htmlContent = bytes.Replace(htmlContent, []byte("<head>"), addHEAD.Bytes(), 1) // 将添加HEAD
 
 	rw.Header.Set("Content-Length", strconv.Itoa(len(htmlContent)))
 	rw.Body = io.NopCloser(bytes.NewReader(htmlContent))
