@@ -25,52 +25,52 @@ type FNTVHandler struct {
 }
 
 func NewFNTVHandler(addr string) (*FNTVHandler, error) {
-	hanler := FNTVHandler{}
+	handler := FNTVHandler{}
 	target, err := url.Parse(addr)
 	if err != nil {
 		return nil, err
 	}
-	hanler.proxy = httputil.NewSingleHostReverseProxy(target)
+	handler.proxy = httputil.NewSingleHostReverseProxy(target)
 
-	hanler.routerRules = []RegexpRouteRule{
+	handler.routerRules = []RegexpRouteRule{
 		{
 			Regexp: constants.FNTVRegexp.StreamHandler,
 			Handler: responseModifyCreater(
-				&httputil.ReverseProxy{Director: hanler.proxy.Director},
-				hanler.ModifyStream,
+				&httputil.ReverseProxy{Director: handler.proxy.Director},
+				handler.ModifyStream,
 			),
 		},
 	}
 
-	hanler.httpStrmHandler, err = getHTTPStrmHandler()
+	handler.httpStrmHandler, err = getHTTPStrmHandler()
 	if err != nil {
 		return nil, fmt.Errorf("创建 HTTPStrm 处理器失败: %w", err)
 	}
 
-	return &hanler, nil
+	return &handler, nil
 }
 
 // 转发请求至上游服务器
-func (hanler *FNTVHandler) ReverseProxy(writer http.ResponseWriter, request *http.Request) {
-	hanler.proxy.ServeHTTP(writer, request)
+func (handler *FNTVHandler) ReverseProxy(writer http.ResponseWriter, request *http.Request) {
+	handler.proxy.ServeHTTP(writer, request)
 }
 
 // 获取正则路由表
-func (hanler *FNTVHandler) GetRegexpRouteRules() []RegexpRouteRule {
-	return hanler.routerRules
+func (handler *FNTVHandler) GetRegexpRouteRules() []RegexpRouteRule {
+	return handler.routerRules
 }
 
 // 获取图片缓存正则表达式
-func (hanler *FNTVHandler) GetImageCacheRegexp() *regexp.Regexp {
+func (handler *FNTVHandler) GetImageCacheRegexp() *regexp.Regexp {
 	return constants.FNTVRegexp.Cache.Image
 }
 
 // 获取字幕缓存正则表达式
-func (hanler *FNTVHandler) GetSubtitleCacheRegexp() *regexp.Regexp {
+func (*FNTVHandler) GetSubtitleCacheRegexp() *regexp.Regexp {
 	return constants.FNTVRegexp.Cache.Subtitle
 }
 
-func (hanler *FNTVHandler) ModifyStream(rw *http.Response) error {
+func (handler *FNTVHandler) ModifyStream(rw *http.Response) error {
 	startTime := time.Now()
 	defer func() {
 		logging.Debugf("FNTV ModifyStream 处理耗时: %s", time.Since(startTime).String())
@@ -116,7 +116,7 @@ func (hanler *FNTVHandler) ModifyStream(rw *http.Response) error {
 			return nil
 		}
 
-		redirectURL := hanler.httpStrmHandler(urlRes.String(), rw.Request.Header.Get("User-Agent"))
+		redirectURL := handler.httpStrmHandler(urlRes.String(), rw.Request.Header.Get("User-Agent"))
 		jsonChain.Set(
 			"data.direct_link_qualities.0.resolution",
 			"HTTPStrm 直链",
