@@ -51,7 +51,8 @@ func (l *LoggerAccessFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		b = entry.Buffer
 	}
 
-	b.WriteString(entry.Message + "\n")
+	b.WriteString(entry.Message)
+	b.WriteByte('\n')
 	return b.Bytes(), nil
 }
 
@@ -79,7 +80,10 @@ func formatAccessLog(ctx *gin.Context, level logrus.Level, msg string) string {
 	b.WriteString(getLogColor(level).ColorString("【" + strings.ToUpper(level.String()) + "】"))
 	b.WriteString(time.Now().Format(time.DateTime))
 	b.WriteString(" | ")
-	b.WriteString(ctx.ClientIP() + " \"" + ctx.Request.URL.Path + "\"")
+	b.WriteString(ctx.ClientIP())
+	b.WriteByte('"')
+	b.WriteString(ctx.Request.URL.Path)
+	b.WriteByte('"')
 	b.WriteString(" | ")
 	b.WriteString(msg)
 
