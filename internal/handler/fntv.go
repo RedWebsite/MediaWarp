@@ -16,6 +16,7 @@ import (
 	"github.com/AkimioJR/MediaWarp/constants"
 	"github.com/AkimioJR/MediaWarp/internal/config"
 	"github.com/AkimioJR/MediaWarp/internal/logging"
+	"github.com/AkimioJR/MediaWarp/static"
 	"github.com/AkimioJR/MediaWarp/utils"
 
 	"github.com/tidwall/gjson"
@@ -220,14 +221,16 @@ func (handler *FNTVHandler) ModifyIndex(rw *http.Response) error {
 	}
 
 	{ // 内置嵌入脚本
-		addHEAD.WriteString("<head>\n" + `<!-- MediaWarp Web 页面修改功能 -->` + "\n")
+		addHEAD.WriteString(static.WebModifyHeaderStart)
 
 		if config.Web.Danmaku { // 弹幕
-			addHEAD.WriteString(`<script src="/MediaWarp/static/fn-danmaku/fntv-play-info-hook.js"></script>` + "\n")
-			addHEAD.WriteString(`<script src="/MediaWarp/static/fn-danmaku/fn-danmaku.js" defer></script>` + "\n")
+			addHEAD.WriteString(static.FNTVPlayInfoHook)
+			addHEAD.WriteByte('\n')
+			addHEAD.WriteString(static.FNTVDanmaku)
+			addHEAD.WriteByte('\n')
 		}
 
-		addHEAD.WriteString(`<!-- MediaWarp Web 页面修改功能 end -->`)
+		addHEAD.WriteString(static.WebModifyHeaderEnd)
 	}
 
 	if config.Web.Head != "" { // 用户自定义HEAD

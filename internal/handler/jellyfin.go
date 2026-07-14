@@ -19,6 +19,7 @@ import (
 	"github.com/AkimioJR/MediaWarp/internal/config"
 	"github.com/AkimioJR/MediaWarp/internal/logging"
 	"github.com/AkimioJR/MediaWarp/internal/service/jellyfin"
+	"github.com/AkimioJR/MediaWarp/static"
 	"github.com/AkimioJR/MediaWarp/utils"
 
 	"github.com/gin-gonic/gin"
@@ -278,35 +279,36 @@ func (handler *JellyfinHandler) ModifyIndex(rw *http.Response) error {
 	}
 
 	{ // 内置嵌入脚本
-		addHEAD.WriteString("<head>\n" + `<!-- MediaWarp Web 页面修改功能 -->` + "\n")
+		addHEAD.WriteString(static.WebModifyHeaderStart)
 
 		if config.Web.ExternalPlayerUrl { // 外部播放器
-			addHEAD.WriteString(`<script src="/MediaWarp/static/embyExternalUrl/embyWebAddExternalUrl/embyLaunchPotplayer.js"></script>` + "\n")
+			addHEAD.WriteString(static.ExternalPlayerUrl)
+			addHEAD.WriteByte('\n')
 		}
 		if config.Web.Crx { // crx 美化
-			addHEAD.WriteString(`<link rel="stylesheet" id="theme-css" href="/MediaWarp/static/jellyfin-crx/static/css/style.css" type="text/css" media="all" />
-    <script src="/MediaWarp/static/jellyfin-crx/static/js/common-utils.js"></script>
-    <script src="/MediaWarp/static/jellyfin-crx/static/js/jquery-3.6.0.min.js"></script>
-    <script src="/MediaWarp/static/jellyfin-crx/static/js/md5.min.js"></script>
-    <script src="/MediaWarp/static/jellyfin-crx/content/main.js"></script>`)
+			addHEAD.WriteString(static.JellyfinCrx)
 			addHEAD.WriteByte('\n')
 		}
 		if config.Web.ActorPlus { // 过滤没有头像的演员和制作人员
-			addHEAD.WriteString(`<script src="/MediaWarp/static/emby-web-mod/actorPlus/actorPlus.js"></script>` + "\n")
+			addHEAD.WriteString(static.JellyfinActorPlus)
+			addHEAD.WriteByte('\n')
 		}
 		if config.Web.FanartShow { // 显示同人图（fanart图）
-			addHEAD.WriteString(`<script src="/MediaWarp/static/emby-web-mod/fanart_show/fanart_show.js"></script>` + "\n")
+			addHEAD.WriteString(static.JellyfinFanartShow)
+			addHEAD.WriteByte('\n')
 		}
 
 		if config.Web.Danmaku { // 弹幕
-			addHEAD.WriteString(`<script src="/MediaWarp/static/jellyfin-danmaku/ede.js" defer></script>` + "\n")
+			addHEAD.WriteString(static.JellyfinDanmaku)
+			addHEAD.WriteByte('\n')
 		}
 
 		if config.Web.VideoTogether { // VideoTogether
-			addHEAD.WriteString(`<script src="https://2gether.video/release/extension.website.user.js"></script>` + "\n")
+			addHEAD.WriteString(static.VideoTogether)
+			addHEAD.WriteByte('\n')
 		}
 
-		addHEAD.WriteString(`<!-- MediaWarp Web 页面修改功能 end -->`)
+		addHEAD.WriteString(static.WebModifyHeaderEnd)
 	}
 
 	if config.Web.Head != "" { // 用户自定义HEAD
