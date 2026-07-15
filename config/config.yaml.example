@@ -40,12 +40,13 @@ web:                                        # Web 页面修改相关设置（FNT
     User-agent: *
     Disallow: /
 
-  crx: false                                # crx 美化（Emby：https://github.com/Nolovenodie/emby-crx；Jellyfin：https://github.com/newday-life/jellyfin-crx）
-  actor_plus: true                          # 过滤没有头像的演员和制作人员
-  fanart_show: false                        # 显示同人图（fanart 图）
-  external_player_url: false                # 是否开启外置播放器（仅 Emby）
+  # 内置嵌入脚本
+  crx: false                                # crx 美化（Emby：https://github.com/Nolovenodie/emby-crx；Jellyfin：https://github.com/newday-life/jellyfin-crx；飞牛影视不支持）
+  actor_plus: true                          # 过滤没有头像的演员和制作人员（飞牛影视不支持）
+  fanart_show: false                        # 显示同人图（fanart 图）（飞牛影视不支持）
+  external_player_url: false                # 是否开启外置播放器（飞牛影视不支持）
   danmaku: false                            # Web 弹幕（Emby：https://github.com/9channel/dd-danmaku；Jellyfin：https://github.com/Izumiko/jellyfin-danmaku；飞牛影视：https://github.com/AkimiJR/MediaWarp/static/fn-danmaku/fn-danmaku-dd.js）
-  video_together: false                     # 共同观影，详情见 https://videotogether.github.io/
+  video_together: false                     # 共同观影，详情见 https://videotogether.github.io
 
 client:                                     # 客户端过滤器
   enable: false                             # 是否启用客户端过滤器
@@ -54,7 +55,7 @@ client:                                     # 客户端过滤器
     - Fileball
     - Infuse
 
-http_strm:                                  # HTTPStrm 相关配置（Strm 文件内容是 标准 HTTP URL）
+http_strm:                                  # HTTPStrm 相关配置（Strm 文件内容是**标准 HTTP URL**）
   enable: true                              # 是否开启 HttpStrm 重定向
   proxy: false                              # 是否允许流量经过媒体服务器（true: 允许串流、转码行为；false: 仅支持直接播放）FNTV无效
   final_url: true                           # 对 URL 进行重定向判断，找到非重定向地址再重定向给客户端，减少客户端重定向次数（适用于 Strm 内容是局域网地址但是想要在公网之中播放）
@@ -63,16 +64,16 @@ http_strm:                                  # HTTPStrm 相关配置（Strm 文�
     - /media/strm/http
     - /media/strm/https
 
-alist_strm:                                 # AlistStrm 相关配置（Strm 文件内容是 Alist 上文件的路径，目前仅支持适配 Alist V3）
+alist_strm:                                 # AlistStrm 相关配置（Strm 文件内容是 AList 上文件的路径；**内容需要是 utf-8 编码**；目前仅支持适配 AList v3 API，**OpenList 目前兼容 AList v3 API**）
   enable: true                              # 是否启用 AlistStrm 重定向
   proxy: true                               # 是否允许流量经过媒体服务器（true: 允许串流、转码行为；false: 仅支持直接播放）FNTV无效
-  raw_url: false                            # Fasle：响应 Alist 服务器的直链（要求客户端可以访问到 Alist） true：直接响应 Alist 上游的真实链接（alist api 中的 raw_url 属性）
-  list:                                     # Alist 服务关配置列表
-    - addr: http://192.168.1.100:5244       # Alist 服务器地址
-      username: admin                       # Alist 服务器账号
-      password: adminadmin                  # Alist 服务器密码
+  raw_url: false                            # Fasle：响应 AList 服务器的直链（要求客户端可以访问到 AList true：直接响应 AList 上游的真实链接（alist api 中的 raw_url 属性）
+  list:                                     # AList 服务关配置列表
+    - addr: http://192.168.1.100:5244       # AList 服务器地址
+      username: admin                       # AList 服务器账号
+      password: adminadmin                  # AList 服务器密码
       prefix_list:                          # 媒体服务器中 Strm 文件的前缀（符合该前缀的 Strm 文件都会路由到该规则下）
-        - /media/strm/MyAlist               # 同一个 Alist 可以有多个前缀规则
+        - /media/strm/MyAlist               # 同一个 AList 可以有多个前缀规则
         - /mnt/cd2/strm
     - addr: https://xiaoya.com              # 可以填写多个配置
       token: xxxxxxx                        # Token 优先级高于 Username 和 Password
