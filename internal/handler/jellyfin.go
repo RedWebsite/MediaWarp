@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
-	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,7 +17,6 @@ import (
 	"github.com/AkimioJR/MediaWarp/internal/config"
 	"github.com/AkimioJR/MediaWarp/internal/logging"
 	"github.com/AkimioJR/MediaWarp/internal/service/jellyfin"
-	"github.com/AkimioJR/MediaWarp/static"
 	"github.com/AkimioJR/MediaWarp/utils"
 
 	"github.com/gin-gonic/gin"
@@ -69,7 +66,7 @@ func NewJellyfinHandler(addr string, apiKey string) (*JellyfinHandler, error) {
 						Regexp: constants.JellyfinRegexp.Router.ModifyIndex,
 						Handler: responseModifyCreater(
 							&httputil.ReverseProxy{Director: handler.proxy.Director},
-							handler.ModifyIndex,
+							generateWebModifier(constants.JELLYFIN),
 						),
 					},
 				)
@@ -255,72 +252,6 @@ func (handler *JellyfinHandler) VideosHandler(ctx *gin.Context) {
 			}
 		}
 	}
-}
-
-// 修改首页函数
-func (handler *JellyfinHandler) ModifyIndex(rw *http.Response) error {
-	var (
-		htmlFilePath string = path.Join(config.CostomDir(), "index.html")
-		htmlContent  []byte
-		addHEAD      bytes.Buffer
-		err          error
-	)
-
-	defer rw.Body.Close() // 无论哪种情况，最终都要确保原 Body 被关闭，避免内存泄漏
-	if config.Web.Index { // 从本地文件读取index.html
-		if htmlContent, err = os.ReadFile(htmlFilePath); err != nil {
-			logging.Warning("读取文件内容出错，错误信息：", err)
-			return err
-		}
-	} else { // 从上游获取响应体
-		if htmlContent, err = io.ReadAll(rw.Body); err != nil {
-			return err
-		}
-	}
-
-	{ // 内置嵌入脚本
-		addHEAD.WriteString(static.WebModifyHeaderStart)
-
-		if config.Web.ExternalPlayerUrl { // 外部播放器
-			addHEAD.WriteString(static.ExternalPlayerUrl)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.Crx { // crx 美化
-			addHEAD.WriteString(static.JellyfinCrx)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.ActorPlus { // 过滤没有头像的演员和制作人员
-			addHEAD.WriteString(static.JellyfinActorPlus)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.FanartShow { // 显示同人图（fanart图）
-			addHEAD.WriteString(static.JellyfinFanartShow)
-			addHEAD.WriteByte('\n')
-		}
-
-		if config.Web.Danmaku { // 弹幕
-			addHEAD.WriteString(static.JellyfinDanmaku)
-			addHEAD.WriteByte('\n')
-		}
-
-		if config.Web.VideoTogether { // VideoTogether
-			addHEAD.WriteString(static.VideoTogether)
-			addHEAD.WriteByte('\n')
-		}
-
-		addHEAD.WriteString(static.WebModifyHeaderEnd)
-	}
-
-	if config.Web.Head != "" { // 用户自定义HEAD
-		addHEAD.WriteString(config.Web.Head)
-		addHEAD.WriteByte('\n')
-	}
-
-	htmlContent = bytes.Replace(htmlContent, []byte("<head>"), addHEAD.Bytes(), 1) // 将添加HEAD
-
-	rw.Header.Set("Content-Length", strconv.Itoa(len(htmlContent)))
-	rw.Body = io.NopCloser(bytes.NewReader(htmlContent))
-	return nil
 }
 
 var _ MediaServerHandler = (*JellyfinHandler)(nil) // 确保 JellyfinHandler 实现 MediaServerHandler 接口

@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
-	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,7 +17,6 @@ import (
 	"github.com/AkimioJR/MediaWarp/internal/config"
 	"github.com/AkimioJR/MediaWarp/internal/logging"
 	"github.com/AkimioJR/MediaWarp/internal/service/emby"
-	"github.com/AkimioJR/MediaWarp/static"
 	"github.com/AkimioJR/MediaWarp/utils"
 
 	"github.com/gin-gonic/gin"
@@ -83,7 +80,7 @@ func NewEmbyServerHandler(addr string, apiKey string) (*EmbyHandler, error) {
 						Regexp: constants.EmbyRegexp.Router.ModifyIndex,
 						Handler: responseModifyCreater(
 							&httputil.ReverseProxy{Director: handler.proxy.Director},
-							handler.ModifyIndex,
+							generateWebModifier(constants.EMBY),
 						),
 					},
 				)
@@ -325,69 +322,6 @@ func (handler *EmbyHandler) ModifyBaseHtmlPlayer(rw *http.Response) error {
 	body = bytes.ReplaceAll(body, []byte(`mediaSource.IsRemote&&"DirectPlay"===playMethod?null:"anonymous"`), []byte("null")) // 修改响应体
 	rw.Header.Set("Content-Length", strconv.Itoa(len(body)))
 	rw.Body = io.NopCloser(bytes.NewReader(body))
-	return nil
-}
-
-// 修改首页函数
-func (handler *EmbyHandler) ModifyIndex(rw *http.Response) error {
-	var (
-		htmlFilePath string = path.Join(config.CostomDir(), "index.html")
-		htmlContent  []byte
-		addHEAD      bytes.Buffer
-		err          error
-	)
-
-	defer rw.Body.Close()  // 无论哪种情况，最终都要确保原 Body 被关闭，避免内存泄漏
-	if !config.Web.Index { // 从上游获取响应体
-		if htmlContent, err = io.ReadAll(rw.Body); err != nil {
-			return err
-		}
-	} else { // 从本地文件读取index.html
-		if htmlContent, err = os.ReadFile(htmlFilePath); err != nil {
-			logging.Warning("读取文件内容出错，错误信息：", err)
-			return err
-		}
-	}
-
-	{ // 内置嵌入脚本
-		addHEAD.WriteString(static.WebModifyHeaderStart)
-
-		if config.Web.ExternalPlayerUrl { // 外部播放器
-			addHEAD.WriteString(static.ExternalPlayerUrl)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.Crx { // crx 美化
-			addHEAD.WriteString(static.EmbyCrx)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.ActorPlus { // 过滤没有头像的演员和制作人员
-			addHEAD.WriteString(static.EmbyActorPlus)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.FanartShow { // 显示同人图（fanart图）
-			addHEAD.WriteString(static.EmbyFanartShow)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.Danmaku { // 弹幕
-			addHEAD.WriteString(static.EmbyDanmaku)
-			addHEAD.WriteByte('\n')
-		}
-		if config.Web.VideoTogether { // VideoTogether
-			addHEAD.WriteString(static.VideoTogether)
-			addHEAD.WriteByte('\n')
-		}
-
-		addHEAD.WriteString(static.WebModifyHeaderEnd)
-	}
-
-	if config.Web.Head != "" { // 用户自定义HEAD
-		addHEAD.WriteString(config.Web.Head)
-		addHEAD.WriteByte('\n')
-	}
-
-	htmlContent = bytes.Replace(htmlContent, []byte("<head>"), addHEAD.Bytes(), 1) // 将添加HEAD
-	rw.Header.Set("Content-Length", strconv.Itoa(len(htmlContent)))
-	rw.Body = io.NopCloser(bytes.NewReader(htmlContent))
 	return nil
 }
 
