@@ -65,12 +65,13 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
       - name: Download binary artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           pattern: MediaWarp_*
           path: dist/input
@@ -134,7 +135,7 @@ jobs:
               await github.rest.repos.deleteRelease({ owner, repo, release_id: release.data.id });
               core.info(`Deleted existing prerelease ${tag}`);
             } catch (error) {
-              if (error.status !== 404) throw error;
+              if (error.status !== 404 && error.status !== 422) throw error;
               core.info(`No existing prerelease ${tag}`);
             }
 
@@ -142,12 +143,12 @@ jobs:
               await github.rest.git.deleteRef({ owner, repo, ref: `tags/${tag}` });
               core.info(`Deleted tag refs/tags/${tag}`);
             } catch (error) {
-              if (error.status !== 404) throw error;
+              if (error.status !== 404 && error.status !== 422) throw error;
               core.info(`Tag refs/tags/${tag} already absent`);
             }
 
       - name: Publish GitHub pre-release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: pre-release
           target_commitish: ${{ github.sha }}
